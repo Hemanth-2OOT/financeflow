@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinanceFlow</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#060914;--bg2:#0c1220;--bg3:#111827;
+  --glass:rgba(255,255,255,0.04);--glass2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+  --text:#f0f4ff;--text2:#8892b0;--text3:#4a5568;
+  --accent:#4f8ef7;--accent2:#7c3aed;
+  --green:#10b981;--red:#ef4444;--amber:#f59e0b;--gold:#fbbf24;
+  --sidebar:240px;--radius:12px;--radius2:8px;
+}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(79,142,247,0.08),transparent),radial-gradient(ellipse 60% 80% at 80% 80%,rgba(124,58,237,0.08),transparent);pointer-events:none;z-index:0}
+.sidebar{position:fixed;left:0;top:0;width:var(--sidebar);height:100vh;background:var(--bg2);border-right:1px solid var(--border);z-index:100;display:flex;flex-direction:column;transition:transform .3s}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border)}
+.logo-text{font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;padding:8px 8px 4px;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius2);cursor:pointer;transition:all .2s;margin-bottom:2px;font-size:13px;font-weight:500;color:var(--text2);border:1px solid transparent}
+.nav-item:hover{background:var(--glass);color:var(--text)}
+.nav-item.active{background:rgba(79,142,247,0.15);color:var(--accent);border-color:rgba(79,142,247,0.2)}
+.sidebar-footer{padding:16px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;align-items:center;gap:8px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.main{margin-left:var(--sidebar);min-height:100vh;position:relative;z-index:1}
+.topbar{background:rgba(6,9,20,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-date{font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.alert-badge{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:var(--red);font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer;font-weight:600;display:none}
+.content{padding:24px 28px}
+.page{display:none}.page.active{display:block}
+.glass-card{background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);padding:20px;backdrop-filter:blur(10px)}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.stat-card{padding:18px 20px;border-radius:var(--radius);border:1px solid var(--border);background:var(--glass);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:.7}
+.stat-card.blue::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.stat-card.purple::before{background:linear-gradient(90deg,var(--accent2),transparent)}
+.stat-card.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.stat-card.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.stat-card.amber::before{background:linear-gradient(90deg,var(--amber),transparent)}
+.stat-card.gold::before{background:linear-gradient(90deg,var(--gold),transparent)}
+.stat-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.stat-value{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-0.5px}
+.stat-sub{font-size:12px;color:var(--text2);margin-top:6px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.section-badge{font-size:11px;background:var(--glass2);border:1px solid var(--border);padding:2px 8px;border-radius:20px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius2);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;border:none;font-family:'Sora',sans-serif}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#3b6fd4);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{background:var(--glass);border:1px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{background:var(--glass2);color:var(--text)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-danger{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.2);color:var(--red)}
+.btn-success{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.2);color:var(--green)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.badge-green{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.2)}
+.badge-red{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.badge-amber{background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.2)}
+.badge-blue{background:rgba(79,142,247,0.15);color:var(--accent);border:1px solid rgba(79,142,247,0.2)}
+.ff-table{width:100%;border-collapse:collapse;font-size:13px}
+.ff-table th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.ff-table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text2);vertical-align:middle}
+.ff-table tr:hover td{background:rgba(255,255,255,0.02)}
+.ff-table tr:last-child td{border-bottom:none}
+.ff-table .name-cell{color:var(--text);font-weight:500}
+.ff-table .amount-cell{font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600}
+.ff-table .actions{display:flex;gap:6px;flex-wrap:wrap}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.form-row input,.form-row select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:10px 14px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;outline:none;transition:border-color .2s}
+.form-row input:focus,.form-row select:focus{border-color:rgba(79,142,247,0.4)}
+.form-row select option{background:var(--bg3)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.alert-card{border-radius:var(--radius2);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;font-size:13px}
+.alert-overdue{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2)}
+.alert-soon{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)}
+.alert-upcoming{background:rgba(79,142,247,0.06);border:1px solid rgba(79,142,247,0.15)}
+.alert-content{flex:1}
+.alert-name{font-weight:600;color:var(--text)}
+.alert-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.alert-amount{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:14px}
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:10px;animation:slideIn .3s ease;min-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.progress-bar{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:10px}
+.progress-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.empty-state{text-align:center;padding:40px 24px;color:var(--text3)}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.4}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px}
+.chart-wrap{position:relative;width:100%;height:260px}
+.hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px;cursor:pointer;color:var(--text)}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}.hamburger{display:flex}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .grid-3,.grid-2,.grid-2-1{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .content{padding:16px}.topbar{padding:0 16px 0 56px}
+  .ff-table{font-size:12px}.ff-table th,.ff-table td{padding:8px 10px}
+}
+@media(max-width:480px){.grid-4{grid-template-columns:1fr}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<button class="hamburger" onclick="toggleSidebar()">☰</button>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">FinanceFlow</div>
+    <div class="logo-sub">// personal finance manager</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="navigate('dashboard')">🏠 Dashboard</div>
+    <div class="nav-item" onclick="navigate('analytics')">📊 Analytics</div>
+    <div class="nav-section">Finance</div>
+    <div class="nav-item" onclick="navigate('emis')">💳 EMI Manager</div>
+    <div class="nav-item" onclick="navigate('insurance')">🛡️ Insurance</div>
+    <div class="nav-item" onclick="navigate('gold')">🪙 Gold Loans</div>
+    <div class="nav-item" onclick="navigate('bills')">📋 Bills & Subs</div>
+  </div>
+  <div class="sidebar-footer"><div class="status-dot"></div> Offline Mode — Data on Device</div>
+</nav>
+
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="today-date"></div>
+      <div class="alert-badge" id="alert-count" onclick="navigate('dashboard')"></div>
+    </div>
+  </header>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="grid-4" style="margin-bottom:20px" id="dash-stats"></div>
+      <div class="grid-2-1" style="margin-bottom:20px">
+        <div>
+          <div class="glass-card" style="margin-bottom:16px">
+            <div class="section-header">
+              <div class="section-title">🔴 Overdue</div>
+              <span class="section-badge" id="overdue-count">0</span>
+            </div>
+            <div id="overdue-list"></div>
+          </div>
+          <div class="glass-card">
+            <div class="section-header">
+              <div class="section-title">⚡ Due in 3 Days</div>
+              <span class="section-badge" id="soon-count">0</span>
+            </div>
+            <div id="soon-list"></div>
+          </div>
+        </div>
+        <div>
+          <div class="glass-card" style="margin-bottom:16px">
+            <div class="section-title" style="margin-bottom:14px">📅 Upcoming</div>
+            <div id="upcoming-list"></div>
+          </div>
+          <div class="glass-card">
+            <div class="section-title" style="margin-bottom:14px">💼 Breakdown</div>
+            <div id="dash-breakdown"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMI -->
+    <div class="page" id="page-emis">
+      <div class="section-header" style="margin-bottom:20px">
+        <div><div style="font-size:22px;font-weight:700">EMI Manager</div><div style="font-size:13px;color:var(--text3);margin-top:4px">Track all loan EMIs</div></div>
+        <button class="btn btn-primary" onclick="openModal('emi')">+ Add EMI</button>
+      </div>
+      <div class="grid-4" style="margin-bottom:20px" id="emi-stats"></div>
+      <div class="glass-card"><div id="emi-table"></div></div>
+    </div>
+
+    <!-- INSURANCE -->
+    <div class="page" id="page-insurance">
+      <div class="section-header" style="margin-bottom:20px">
+        <div><div style="font-size:22px;font-weight:700">Insurance Tracker</div><div style="font-size:13px;color:var(--text3);margin-top:4px">Premiums & policies</div></div>
+        <button class="btn btn-primary" onclick="openModal('insurance')">+ Add Policy</button>
+      </div>
+      <div class="grid-4" style="margin-bottom:20px" id="ins-stats"></div>
+      <div class="glass-card"><div id="ins-table"></div></div>
+    </div>
+
+    <!-- GOLD -->
+    <div class="page" id="page-gold">
+      <div class="section-header" style="margin-bottom:20px">
+        <div><div style="font-size:22px;font-weight:700">Gold Loan Manager</div><div style="font-size:13px;color:var(--text3);margin-top:4px">Track gold-backed loans</div></div>
+        <button class="btn btn-primary" onclick="openModal('gold')">+ Add Gold Loan</button>
+      </div>
+      <div class="grid-4" style="margin-bottom:20px" id="gold-stats"></div>
+      <div class="glass-card"><div id="gold-table"></div></div>
+    </div>
+
+    <!-- BILLS -->
+    <div class="page" id="page-bills">
+      <div class="section-header" style="margin-bottom:20px">
+        <div><div style="font-size:22px;font-weight:700">Bills & Subscriptions</div><div style="font-size:13px;color:var(--text3);margin-top:4px">Utilities & recurring payments</div></div>
+        <button class="btn btn-primary" onclick="openModal('bill')">+ Add Bill</button>
+      </div>
+      <div class="grid-4" style="margin-bottom:20px" id="bill-stats"></div>
+      <div class="glass-card"><div id="bill-table"></div></div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="page-analytics">
+      <div style="font-size:22px;font-weight:700;margin-bottom:4px">Analytics</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Financial overview</div>
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="glass-card"><div class="section-title" style="margin-bottom:16px">📊 Expense Distribution</div><div class="chart-wrap"><canvas id="pieChart"></canvas></div></div>
+        <div class="glass-card"><div class="section-title" style="margin-bottom:16px">💳 EMI Breakdown</div><div class="chart-wrap"><canvas id="emiChart"></canvas></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="glass-card"><div class="section-title" style="margin-bottom:16px">📋 Bills</div><div class="chart-wrap"><canvas id="billChart"></canvas></div></div>
+        <div class="glass-card"><div class="section-title" style="margin-bottom:16px">🪙 Gold Loans</div><div class="chart-wrap"><canvas id="goldChart"></canvas></div></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- EMI Modal -->
+<div class="modal-overlay" id="modal-emi">
+  <div class="modal">
+    <div class="modal-title"><span id="emi-modal-title">Add EMI</span><button class="modal-close" onclick="closeModal('emi')">×</button></div>
+    <div class="form-grid">
+      <div class="form-row"><label>EMI Name *</label><input id="emi-name" placeholder="e.g. Home Loan"></div>
+      <div class="form-row"><label>Bank / Lender *</label><input id="emi-bank" placeholder="e.g. SBI"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Monthly EMI (₹) *</label><input id="emi-amount" type="number" placeholder="0"></div>
+      <div class="form-row"><label>Interest Rate (%)</label><input id="emi-rate" type="number" step="0.1" placeholder="0"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Due Date *</label><input id="emi-due" type="date"></div>
+      <div class="form-row"><label>Months Remaining</label><input id="emi-months" type="number" placeholder="0"></div>
+    </div>
+    <input type="hidden" id="emi-edit-id">
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEmi()">Save EMI</button>
+      <button class="btn btn-ghost" onclick="closeModal('emi')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Insurance Modal -->
+<div class="modal-overlay" id="modal-insurance">
+  <div class="modal">
+    <div class="modal-title"><span id="ins-modal-title">Add Policy</span><button class="modal-close" onclick="closeModal('insurance')">×</button></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Policy Name *</label><input id="ins-policy" placeholder="e.g. Term Life"></div>
+      <div class="form-row"><label>Company *</label><input id="ins-company" placeholder="e.g. LIC"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Premium (₹) *</label><input id="ins-premium" type="number" placeholder="0"></div>
+      <div class="form-row"><label>Frequency *</label>
+        <select id="ins-freq">
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="half-yearly">Half-Yearly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Due Date *</label><input id="ins-due" type="date"></div>
+      <div class="form-row"><label>Maturity Date</label><input id="ins-maturity" type="date"></div>
+    </div>
+    <input type="hidden" id="ins-edit-id">
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveInsurance()">Save Policy</button>
+      <button class="btn btn-ghost" onclick="closeModal('insurance')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gold Modal -->
+<div class="modal-overlay" id="modal-gold">
+  <div class="modal">
+    <div class="modal-title"><span id="gold-modal-title">Add Gold Loan</span><button class="modal-close" onclick="closeModal('gold')">×</button></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Lender *</label><input id="gold-lender" placeholder="e.g. Muthoot Finance"></div>
+      <div class="form-row"><label>Gold Weight (g) *</label><input id="gold-weight" type="number" step="0.1" placeholder="0"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Loan Amount (₹) *</label><input id="gold-loan" type="number" placeholder="0" oninput="calcGoldInterest()"></div>
+      <div class="form-row"><label>Interest Rate (% p.a.) *</label><input id="gold-rate" type="number" step="0.1" placeholder="0" oninput="calcGoldInterest()"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Monthly Interest (₹)</label><input id="gold-monthly" type="number" placeholder="Auto-calculated" style="color:var(--accent)"></div>
+      <div class="form-row"><label>Balance Amount (₹) *</label><input id="gold-balance" type="number" placeholder="0"></div>
+    </div>
+    <div class="form-row"><label>Due Date *</label><input id="gold-due" type="date"></div>
+    <input type="hidden" id="gold-edit-id">
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveGold()">Save Gold Loan</button>
+      <button class="btn btn-ghost" onclick="closeModal('gold')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bill Modal -->
+<div class="modal-overlay" id="modal-bill">
+  <div class="modal">
+    <div class="modal-title"><span id="bill-modal-title">Add Bill</span><button class="modal-close" onclick="closeModal('bill')">×</button></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Bill Name *</label><input id="bill-name" placeholder="e.g. Electricity"></div>
+      <div class="form-row"><label>Category</label>
+        <select id="bill-cat">
+          <option value="utility">Utility</option>
+          <option value="subscription">Subscription</option>
+          <option value="rent">Rent</option>
+          <option value="internet">Internet</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Amount (₹) *</label><input id="bill-amount" type="number" placeholder="0"></div>
+      <div class="form-row"><label>Due Date *</label><input id="bill-due" type="date"></div>
+    </div>
+    <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="bill-recurring" checked style="width:auto"> Recurring Bill</label></div>
+    <input type="hidden" id="bill-edit-id">
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveBill()">Save Bill</button>
+      <button class="btn btn-ghost" onclick="closeModal('bill')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  LOCAL STORAGE DATABASE
+// ═══════════════════════════════════════════════════
+const DB = {
+  get(key){ try{ return JSON.parse(localStorage.getItem('ff_'+key)||'[]'); }catch(e){ return []; } },
+  set(key,val){ localStorage.setItem('ff_'+key, JSON.stringify(val)); },
+  nextId(key){ const items=DB.get(key); return items.length? Math.max(...items.map(i=>i.id))+1 : 1; }
+};
+
+// ═══════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════
+const fmt = n => '₹'+(n||0).toLocaleString('en-IN',{maximumFractionDigits:0});
+const fmtD = s => { if(!s)return '—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); };
+const daysUntil = s => { if(!s)return 999; const d=new Date(s+'T00:00:00'); const n=new Date(); n.setHours(0,0,0,0); return Math.floor((d-n)/86400000); };
+const statusBadge = (paid,days) => {
+  if(paid) return '<span class="badge badge-green">Paid</span>';
+  if(days<0) return '<span class="badge badge-red">Overdue</span>';
+  if(days<=3) return '<span class="badge badge-amber">Due Soon</span>';
+  return '<span class="badge badge-blue">Pending</span>';
+};
+const emptyState = (icon,title,sub='') => `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div>${sub?`<div style="font-size:12px">${sub}</div>`:''}</div>`;
+
+function toast(msg,type='success'){
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${type==='success'?'✓':'✗'}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+let currentPage='dashboard';
+let chartInstances={};
+
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+page+"'")) n.classList.add('active'); });
+  currentPage=page;
+  const titles={dashboard:'Dashboard',emis:'EMI Manager',insurance:'Insurance Tracker',gold:'Gold Loan Manager',bills:'Bills & Subscriptions',analytics:'Analytics'};
+  document.getElementById('page-title').textContent=titles[page]||page;
+  if(page==='dashboard') renderDashboard();
+  else if(page==='emis') renderEmis();
+  else if(page==='insurance') renderInsurance();
+  else if(page==='gold') renderGold();
+  else if(page==='bills') renderBills();
+  else if(page==='analytics') renderAnalytics();
+  if(window.innerWidth<900) document.getElementById('sidebar').classList.remove('open');
+}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
+
+// ═══════════════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════════════
+function openModal(type,data=null){
+  if(type==='emi'){
+    document.getElementById('emi-modal-title').textContent=data?'Edit EMI':'Add EMI';
+    document.getElementById('emi-edit-id').value=data?.id||'';
+    document.getElementById('emi-name').value=data?.name||'';
+    document.getElementById('emi-bank').value=data?.bank||'';
+    document.getElementById('emi-amount').value=data?.amount||'';
+    document.getElementById('emi-rate').value=data?.interest_rate||'';
+    document.getElementById('emi-due').value=data?.due_date||'';
+    document.getElementById('emi-months').value=data?.months_left||'';
+  } else if(type==='insurance'){
+    document.getElementById('ins-modal-title').textContent=data?'Edit Policy':'Add Policy';
+    document.getElementById('ins-edit-id').value=data?.id||'';
+    document.getElementById('ins-policy').value=data?.policy_name||'';
+    document.getElementById('ins-company').value=data?.company||'';
+    document.getElementById('ins-premium').value=data?.premium_amount||'';
+    document.getElementById('ins-freq').value=data?.frequency||'monthly';
+    document.getElementById('ins-due').value=data?.due_date||'';
+    document.getElementById('ins-maturity').value=data?.maturity_date||'';
+  } else if(type==='gold'){
+    document.getElementById('gold-modal-title').textContent=data?'Edit Gold Loan':'Add Gold Loan';
+    document.getElementById('gold-edit-id').value=data?.id||'';
+    document.getElementById('gold-lender').value=data?.lender||'';
+    document.getElementById('gold-weight').value=data?.gold_weight||'';
+    document.getElementById('gold-loan').value=data?.loan_amount||'';
+    document.getElementById('gold-rate').value=data?.interest_rate||'';
+    document.getElementById('gold-monthly').value=data?.monthly_interest||'';
+    document.getElementById('gold-balance').value=data?.balance_amount||'';
+    document.getElementById('gold-due').value=data?.due_date||'';
+  } else if(type==='bill'){
+    document.getElementById('bill-modal-title').textContent=data?'Edit Bill':'Add Bill';
+    document.getElementById('bill-edit-id').value=data?.id||'';
+    document.getElementById('bill-name').value=data?.name||'';
+    document.getElementById('bill-amount').value=data?.amount||'';
+    document.getElementById('bill-due').value=data?.due_date||'';
+    document.getElementById('bill-cat').value=data?.category||'utility';
+    document.getElementById('bill-recurring').checked=data?.recurring!==false;
+  }
+  document.getElementById('modal-'+type).classList.add('open');
+}
+function closeModal(type){ document.getElementById('modal-'+type).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+function calcGoldInterest(){
+  const l=parseFloat(document.getElementById('gold-loan').value)||0;
+  const r=parseFloat(document.getElementById('gold-rate').value)||0;
+  document.getElementById('gold-monthly').value=((l*r)/(100*12)).toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════
+//  EMI CRUD
+// ═══════════════════════════════════════════════════
+function saveEmi(){
+  const id=document.getElementById('emi-edit-id').value;
+  const name=document.getElementById('emi-name').value.trim();
+  const bank=document.getElementById('emi-bank').value.trim();
+  const amount=parseFloat(document.getElementById('emi-amount').value)||0;
+  const due_date=document.getElementById('emi-due').value;
+  if(!name||!bank||!amount||!due_date){ toast('Fill required fields','error'); return; }
+  const emis=DB.get('emis');
+  if(id){
+    const i=emis.findIndex(e=>e.id==id);
+    if(i>=0) emis[i]={...emis[i],name,bank,amount,interest_rate:parseFloat(document.getElementById('emi-rate').value)||0,due_date,months_left:parseInt(document.getElementById('emi-months').value)||0};
+  } else {
+    emis.push({id:DB.nextId('emis'),name,bank,amount,interest_rate:parseFloat(document.getElementById('emi-rate').value)||0,due_date,months_left:parseInt(document.getElementById('emi-months').value)||0,paid:false});
+  }
+  DB.set('emis',emis); closeModal('emi'); toast(id?'EMI updated!':'EMI added!'); renderEmis();
+}
+function toggleEmi(id){ const emis=DB.get('emis'); const i=emis.findIndex(e=>e.id==id); if(i>=0){ emis[i].paid=!emis[i].paid; DB.set('emis',emis); } renderEmis(); if(currentPage==='dashboard') renderDashboard(); }
+function deleteEmi(id){ if(!confirm('Delete this EMI?')) return; const emis=DB.get('emis').filter(e=>e.id!=id); DB.set('emis',emis); toast('Deleted!'); renderEmis(); }
+
+function renderEmis(){
+  const emis=DB.get('emis').sort((a,b)=>new Date(a.due_date)-new Date(b.due_date));
+  const total=emis.reduce((s,e)=>s+e.amount,0);
+  const unpaid=emis.filter(e=>!e.paid).reduce((s,e)=>s+e.amount,0);
+  document.getElementById('emi-stats').innerHTML=`
+    <div class="stat-card blue"><div class="stat-label">Total Monthly</div><div class="stat-value">${fmt(total)}</div><div class="stat-sub">${emis.length} loans</div></div>
+    <div class="stat-card red"><div class="stat-label">Unpaid</div><div class="stat-value">${fmt(unpaid)}</div></div>
+    <div class="stat-card green"><div class="stat-label">Paid</div><div class="stat-value">${emis.filter(e=>e.paid).length}</div></div>
+    <div class="stat-card amber"><div class="stat-label">Overdue</div><div class="stat-value">${emis.filter(e=>!e.paid&&daysUntil(e.due_date)<0).length}</div></div>`;
+  if(!emis.length){ document.getElementById('emi-table').innerHTML=emptyState('💳','No EMIs yet','Click "+ Add EMI" to get started'); return; }
+  document.getElementById('emi-table').innerHTML=`<div style="overflow-x:auto"><table class="ff-table"><thead><tr><th>Name</th><th>Bank</th><th>Amount</th><th>Rate</th><th>Due Date</th><th>Months</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    ${emis.map(e=>`<tr><td class="name-cell">${e.name}</td><td>${e.bank}</td><td class="amount-cell">${fmt(e.amount)}</td><td>${e.interest_rate||0}%</td><td>${fmtD(e.due_date)}</td><td>${e.months_left}mo</td><td>${statusBadge(e.paid,daysUntil(e.due_date))}</td>
+    <td><div class="actions"><button class="btn btn-sm ${e.paid?'btn-ghost':'btn-success'}" onclick="toggleEmi(${e.id})">${e.paid?'Unmark':'✓ Paid'}</button><button class="btn btn-sm btn-ghost" onclick='openModal("emi",${JSON.stringify(e)})'>Edit</button><button class="btn btn-sm btn-danger" onclick="deleteEmi(${e.id})">Del</button></div></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  INSURANCE CRUD
+// ═══════════════════════════════════════════════════
+function saveInsurance(){
+  const id=document.getElementById('ins-edit-id').value;
+  const policy_name=document.getElementById('ins-policy').value.trim();
+  const company=document.getElementById('ins-company').value.trim();
+  const premium_amount=parseFloat(document.getElementById('ins-premium').value)||0;
+  const due_date=document.getElementById('ins-due').value;
+  if(!policy_name||!company||!premium_amount||!due_date){ toast('Fill required fields','error'); return; }
+  const ins=DB.get('insurance');
+  const item={policy_name,company,premium_amount,frequency:document.getElementById('ins-freq').value,due_date,maturity_date:document.getElementById('ins-maturity').value||null};
+  if(id){ const i=ins.findIndex(x=>x.id==id); if(i>=0) ins[i]={...ins[i],...item}; }
+  else ins.push({id:DB.nextId('insurance'),...item,paid:false});
+  DB.set('insurance',ins); closeModal('insurance'); toast(id?'Policy updated!':'Policy added!'); renderInsurance();
+}
+function toggleIns(id){ const ins=DB.get('insurance'); const i=ins.findIndex(x=>x.id==id); if(i>=0){ ins[i].paid=!ins[i].paid; DB.set('insurance',ins); } renderInsurance(); }
+function deleteIns(id){ if(!confirm('Delete this policy?')) return; DB.set('insurance',DB.get('insurance').filter(x=>x.id!=id)); toast('Deleted!'); renderInsurance(); }
+
+function renderInsurance(){
+  const ins=DB.get('insurance').sort((a,b)=>new Date(a.due_date)-new Date(b.due_date));
+  const total=ins.reduce((s,i)=>s+i.premium_amount,0);
+  document.getElementById('ins-stats').innerHTML=`
+    <div class="stat-card purple"><div class="stat-label">Total Premiums</div><div class="stat-value">${fmt(total)}</div><div class="stat-sub">${ins.length} policies</div></div>
+    <div class="stat-card red"><div class="stat-label">Unpaid</div><div class="stat-value">${fmt(ins.filter(i=>!i.paid).reduce((s,i)=>s+i.premium_amount,0))}</div></div>
+    <div class="stat-card green"><div class="stat-label">Paid</div><div class="stat-value">${ins.filter(i=>i.paid).length}</div></div>
+    <div class="stat-card amber"><div class="stat-label">Overdue</div><div class="stat-value">${ins.filter(i=>!i.paid&&daysUntil(i.due_date)<0).length}</div></div>`;
+  if(!ins.length){ document.getElementById('ins-table').innerHTML=emptyState('🛡️','No policies yet'); return; }
+  document.getElementById('ins-table').innerHTML=`<div style="overflow-x:auto"><table class="ff-table"><thead><tr><th>Policy</th><th>Company</th><th>Premium</th><th>Frequency</th><th>Due Date</th><th>Maturity</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    ${ins.map(i=>`<tr><td class="name-cell">${i.policy_name}</td><td>${i.company}</td><td class="amount-cell">${fmt(i.premium_amount)}</td><td><span class="badge badge-blue">${i.frequency}</span></td><td>${fmtD(i.due_date)}</td><td>${fmtD(i.maturity_date)}</td><td>${statusBadge(i.paid,daysUntil(i.due_date))}</td>
+    <td><div class="actions"><button class="btn btn-sm ${i.paid?'btn-ghost':'btn-success'}" onclick="toggleIns(${i.id})">${i.paid?'Unmark':'✓ Paid'}</button><button class="btn btn-sm btn-ghost" onclick='openModal("insurance",${JSON.stringify(i)})'>Edit</button><button class="btn btn-sm btn-danger" onclick="deleteIns(${i.id})">Del</button></div></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  GOLD LOANS CRUD
+// ═══════════════════════════════════════════════════
+function saveGold(){
+  const id=document.getElementById('gold-edit-id').value;
+  const lender=document.getElementById('gold-lender').value.trim();
+  const loan_amount=parseFloat(document.getElementById('gold-loan').value)||0;
+  const due_date=document.getElementById('gold-due').value;
+  if(!lender||!loan_amount||!due_date){ toast('Fill required fields','error'); return; }
+  const loans=DB.get('gold');
+  const r=parseFloat(document.getElementById('gold-rate').value)||0;
+  const mi=parseFloat(document.getElementById('gold-monthly').value)||((loan_amount*r)/(100*12));
+  const item={lender,gold_weight:parseFloat(document.getElementById('gold-weight').value)||0,loan_amount,interest_rate:r,monthly_interest:mi,due_date,balance_amount:parseFloat(document.getElementById('gold-balance').value)||loan_amount};
+  if(id){ const i=loans.findIndex(x=>x.id==id); if(i>=0) loans[i]={...loans[i],...item}; }
+  else loans.push({id:DB.nextId('gold'),...item,paid:false});
+  DB.set('gold',loans); closeModal('gold'); toast(id?'Updated!':'Gold loan added!'); renderGold();
+}
+function toggleGold(id){ const loans=DB.get('gold'); const i=loans.findIndex(x=>x.id==id); if(i>=0){ loans[i].paid=!loans[i].paid; DB.set('gold',loans); } renderGold(); }
+function deleteGold(id){ if(!confirm('Delete this gold loan?')) return; DB.set('gold',DB.get('gold').filter(x=>x.id!=id)); toast('Deleted!'); renderGold(); }
+
+function renderGold(){
+  const loans=DB.get('gold').sort((a,b)=>new Date(a.due_date)-new Date(b.due_date));
+  const totalLoan=loans.reduce((s,g)=>s+g.loan_amount,0);
+  const totalInt=loans.reduce((s,g)=>s+g.monthly_interest,0);
+  const totalW=loans.reduce((s,g)=>s+g.gold_weight,0);
+  document.getElementById('gold-stats').innerHTML=`
+    <div class="stat-card gold"><div class="stat-label">Total Loan</div><div class="stat-value">${fmt(totalLoan)}</div></div>
+    <div class="stat-card amber"><div class="stat-label">Monthly Interest</div><div class="stat-value">${fmt(totalInt)}</div></div>
+    <div class="stat-card blue"><div class="stat-label">Gold Weight</div><div class="stat-value">${totalW.toFixed(1)}g</div></div>
+    <div class="stat-card red"><div class="stat-label">Overdue</div><div class="stat-value">${loans.filter(g=>!g.paid&&daysUntil(g.due_date)<0).length}</div></div>`;
+  if(!loans.length){ document.getElementById('gold-table').innerHTML=emptyState('🪙','No gold loans yet'); return; }
+  document.getElementById('gold-table').innerHTML=`<div style="overflow-x:auto"><table class="ff-table"><thead><tr><th>Lender</th><th>Gold(g)</th><th>Loan Amt</th><th>Rate</th><th>Monthly Int</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    ${loans.map(g=>`<tr><td class="name-cell">${g.lender}</td><td>${g.gold_weight}g</td><td class="amount-cell">${fmt(g.loan_amount)}</td><td>${g.interest_rate}%</td><td class="amount-cell">${fmt(g.monthly_interest)}</td><td>${fmt(g.balance_amount)}</td><td>${fmtD(g.due_date)}</td><td>${statusBadge(g.paid,daysUntil(g.due_date))}</td>
+    <td><div class="actions"><button class="btn btn-sm ${g.paid?'btn-ghost':'btn-success'}" onclick="toggleGold(${g.id})">${g.paid?'Unmark':'✓ Paid'}</button><button class="btn btn-sm btn-ghost" onclick='openModal("gold",${JSON.stringify(g)})'>Edit</button><button class="btn btn-sm btn-danger" onclick="deleteGold(${g.id})">Del</button></div></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  BILLS CRUD
+// ═══════════════════════════════════════════════════
+function saveBill(){
+  const id=document.getElementById('bill-edit-id').value;
+  const name=document.getElementById('bill-name').value.trim();
+  const amount=parseFloat(document.getElementById('bill-amount').value)||0;
+  const due_date=document.getElementById('bill-due').value;
+  if(!name||!amount||!due_date){ toast('Fill required fields','error'); return; }
+  const bills=DB.get('bills');
+  const item={name,amount,due_date,category:document.getElementById('bill-cat').value,recurring:document.getElementById('bill-recurring').checked};
+  if(id){ const i=bills.findIndex(x=>x.id==id); if(i>=0) bills[i]={...bills[i],...item}; }
+  else bills.push({id:DB.nextId('bills'),...item,paid:false});
+  DB.set('bills',bills); closeModal('bill'); toast(id?'Updated!':'Bill added!'); renderBills();
+}
+function toggleBill(id){ const bills=DB.get('bills'); const i=bills.findIndex(x=>x.id==id); if(i>=0){ bills[i].paid=!bills[i].paid; DB.set('bills',bills); } renderBills(); }
+function deleteBill(id){ if(!confirm('Delete this bill?')) return; DB.set('bills',DB.get('bills').filter(x=>x.id!=id)); toast('Deleted!'); renderBills(); }
+
+function renderBills(){
+  const catIcon={utility:'⚡',subscription:'📺',rent:'🏠',internet:'🌐',other:'📋'};
+  const bills=DB.get('bills').sort((a,b)=>new Date(a.due_date)-new Date(b.due_date));
+  const total=bills.reduce((s,b)=>s+b.amount,0);
+  const unpaid=bills.filter(b=>!b.paid).reduce((s,b)=>s+b.amount,0);
+  document.getElementById('bill-stats').innerHTML=`
+    <div class="stat-card blue"><div class="stat-label">Total Bills</div><div class="stat-value">${fmt(total)}</div></div>
+    <div class="stat-card red"><div class="stat-label">Unpaid</div><div class="stat-value">${fmt(unpaid)}</div></div>
+    <div class="stat-card green"><div class="stat-label">Paid</div><div class="stat-value">${bills.filter(b=>b.paid).length}</div></div>
+    <div class="stat-card amber"><div class="stat-label">Recurring</div><div class="stat-value">${bills.filter(b=>b.recurring).length}</div></div>`;
+  if(!bills.length){ document.getElementById('bill-table').innerHTML=emptyState('📋','No bills yet'); return; }
+  document.getElementById('bill-table').innerHTML=`<div style="overflow-x:auto"><table class="ff-table"><thead><tr><th>Bill</th><th>Category</th><th>Amount</th><th>Due Date</th><th>Recurring</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    ${bills.map(b=>`<tr><td class="name-cell">${catIcon[b.category]||'📋'} ${b.name}</td><td><span class="badge badge-blue">${b.category}</span></td><td class="amount-cell">${fmt(b.amount)}</td><td>${fmtD(b.due_date)}</td><td>${b.recurring?'<span class="badge badge-green">Yes</span>':'No'}</td><td>${statusBadge(b.paid,daysUntil(b.due_date))}</td>
+    <td><div class="actions"><button class="btn btn-sm ${b.paid?'btn-ghost':'btn-success'}" onclick="toggleBill(${b.id})">${b.paid?'Unmark':'✓ Paid'}</button><button class="btn btn-sm btn-ghost" onclick='openModal("bill",${JSON.stringify(b)})'>Edit</button><button class="btn btn-sm btn-danger" onclick="deleteBill(${b.id})">Del</button></div></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDashboard(){
+  const emis=DB.get('emis'), ins=DB.get('insurance'), gold=DB.get('gold'), bills=DB.get('bills');
+  const allItems=[
+    ...emis.map(e=>({...e,_type:'EMI',_name:e.name,_amount:e.amount,_days:daysUntil(e.due_date)})),
+    ...ins.map(i=>({...i,_type:'Insurance',_name:i.policy_name,_amount:i.premium_amount,_days:daysUntil(i.due_date)})),
+    ...gold.map(g=>({...g,_type:'Gold Loan',_name:g.lender,_amount:g.monthly_interest,_days:daysUntil(g.due_date)})),
+    ...bills.map(b=>({...b,_type:'Bill',_name:b.name,_amount:b.amount,_days:daysUntil(b.due_date)})),
+  ];
+  const te=emis.reduce((s,e)=>s+e.amount,0);
+  const ti=ins.reduce((s,i)=>s+i.premium_amount,0);
+  const tg=gold.reduce((s,g)=>s+g.monthly_interest,0);
+  const tb=bills.reduce((s,b)=>s+b.amount,0);
+  const total=te+ti+tg+tb;
+  const unpaid=allItems.filter(x=>!x.paid).reduce((s,x)=>s+x._amount,0);
+  const paid=total-unpaid;
+  const pct=total>0?Math.round(paid/total*100):0;
+  const overdue=allItems.filter(x=>x._days<0&&!x.paid);
+  const soon=allItems.filter(x=>x._days>=0&&x._days<=3&&!x.paid);
+  const upcoming=allItems.filter(x=>x._days>3&&x._days<=30&&!x.paid).sort((a,b)=>a._days-b._days).slice(0,5);
+
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat-card blue"><div class="stat-label">Total This Month</div><div class="stat-value">${fmt(total)}</div><div class="stat-sub">All obligations</div></div>
+    <div class="stat-card red"><div class="stat-label">Total Unpaid</div><div class="stat-value">${fmt(unpaid)}</div><div class="stat-sub">Needs payment</div></div>
+    <div class="stat-card green"><div class="stat-label">Total Paid</div><div class="stat-value">${fmt(paid)}</div><div class="stat-sub">${pct}% complete</div></div>
+    <div class="stat-card amber"><div class="stat-label">Alerts</div><div class="stat-value">${overdue.length+soon.length}</div><div class="stat-sub">${overdue.length} overdue, ${soon.length} soon</div></div>`;
+
+  const alertBadge=document.getElementById('alert-count');
+  const alertCount=overdue.length+soon.length;
+  if(alertCount>0){ alertBadge.textContent=alertCount+' Alerts'; alertBadge.style.display='block'; }
+  else alertBadge.style.display='none';
+
+  document.getElementById('overdue-count').textContent=overdue.length;
+  document.getElementById('soon-count').textContent=soon.length;
+
+  const alertCard=(item,cls)=>`<div class="alert-card alert-${cls}">
+    <div style="font-size:18px">${item._days<0?'🔴':item._days<=3?'🟡':'🔵'}</div>
+    <div class="alert-content"><div class="alert-name">${item._name}</div><div class="alert-meta">${item._type} • ${item._days<0?Math.abs(item._days)+' days overdue':'Due in '+item._days+' days'} • ${fmtD(item.due_date)}</div></div>
+    <div class="alert-amount">${fmt(item._amount)}</div></div>`;
+
+  document.getElementById('overdue-list').innerHTML=overdue.length?overdue.slice(0,5).map(x=>alertCard(x,'overdue')).join(''):emptyState('✅','All clear!','No overdue payments');
+  document.getElementById('soon-list').innerHTML=soon.length?soon.map(x=>alertCard(x,'soon')).join(''):emptyState('😌','Nothing urgent','No payments due soon');
+  document.getElementById('upcoming-list').innerHTML=upcoming.length?upcoming.map(x=>alertCard(x,'upcoming')).join(''):emptyState('📅','No upcoming','within next 30 days');
+
+  const bd={EMIs:te,Insurance:ti,'Gold Loans':tg,Bills:tb};
+  document.getElementById('dash-breakdown').innerHTML=Object.entries(bd).map(([k,v])=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">${k}</span><span style="font-family:'JetBrains Mono',monospace">${fmt(v)}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${total>0?Math.round(v/total*100):0}%;background:var(--accent)"></div></div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  ANALYTICS
+// ═══════════════════════════════════════════════════
+function renderAnalytics(){
+  const emis=DB.get('emis'), ins=DB.get('insurance'), gold=DB.get('gold'), bills=DB.get('bills');
+  const colors=['#4f8ef7','#7c3aed','#10b981','#f59e0b','#ef4444','#ec4899','#fbbf24','#06b6d4'];
+  const gc='rgba(255,255,255,0.06)', lc='#8892b0';
+  const destroy=id=>{ if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; } };
+
+  // Pie
+  destroy('pie');
+  const te=emis.reduce((s,e)=>s+e.amount,0);
+  const ti=ins.reduce((s,i)=>s+i.premium_amount,0);
+  const tg=gold.reduce((s,g)=>s+g.monthly_interest,0);
+  const tb=bills.reduce((s,b)=>s+b.amount,0);
+  const pieVals=[['EMIs',te],['Insurance',ti],['Gold Loans',tg],['Bills',tb]].filter(([,v])=>v>0);
+  if(pieVals.length){
+    chartInstances['pie']=new Chart(document.getElementById('pieChart'),{type:'doughnut',
+      data:{labels:pieVals.map(([k])=>k),datasets:[{data:pieVals.map(([,v])=>v),backgroundColor:colors,borderWidth:2,borderColor:'rgba(0,0,0,0)'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:lc,font:{family:'Sora'},boxWidth:12}}}}});
+  }
+
+  // EMI bar
+  destroy('emi');
+  if(emis.length){
+    chartInstances['emi']=new Chart(document.getElementById('emiChart'),{type:'bar',
+      data:{labels:emis.map(e=>e.name),datasets:[{label:'EMI (₹)',data:emis.map(e=>e.amount),backgroundColor:'rgba(79,142,247,0.6)',borderColor:'#4f8ef7',borderWidth:1,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:lc},grid:{color:gc}},y:{ticks:{color:lc,callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:gc}}}}});
+  }
+
+  // Bills bar
+  destroy('bill');
+  if(bills.length){
+    chartInstances['bill']=new Chart(document.getElementById('billChart'),{type:'bar',
+      data:{labels:bills.map(b=>b.name),datasets:[{label:'Amount (₹)',data:bills.map(b=>b.amount),backgroundColor:'rgba(16,185,129,0.6)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:lc,callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:gc}},y:{ticks:{color:lc},grid:{color:gc}}}}});
+  }
+
+  // Gold bar
+  destroy('gold');
+  if(gold.length){
+    chartInstances['gold']=new Chart(document.getElementById('goldChart'),{type:'bar',
+      data:{labels:gold.map(g=>g.lender),datasets:[
+        {label:'Loan Amt',data:gold.map(g=>g.loan_amount),backgroundColor:'rgba(251,191,36,0.6)',borderColor:'#fbbf24',borderWidth:1,borderRadius:4},
+        {label:'Monthly Int',data:gold.map(g=>g.monthly_interest),backgroundColor:'rgba(245,158,11,0.4)',borderColor:'#f59e0b',borderWidth:1,borderRadius:4}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:lc,boxWidth:12}}},scales:{x:{ticks:{color:lc},grid:{color:gc}},y:{ticks:{color:lc,callback:v=>'₹'+v.toLocaleString('en-IN')},grid:{color:gc}}}}});
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+renderDashboard();
+</script>
+</body>
+</html>
